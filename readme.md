@@ -1,5 +1,3 @@
-Sure, here's a README tailored for your Telegram Guardian Bot project:
-
 # 🛡️ Telegram Guardian Bot
 
 **Telegram Guardian Bot** is a robust automation tool designed to help manage and protect your Telegram groups. This Python script allows users to set up a bot that can automatically delete messages containing specific words, welcome new members, bid farewell to those who leave, and send scheduled messages. Perfect for maintaining a healthy and friendly group environment!
@@ -110,5 +108,3 @@ We welcome contributions! Here’s how you can help:
 This project is licensed under the [MIT License](https://opensource.org/license/mit). See the LICENSE file for more details.
 
 ---
-
-Feel free to adjust any parts of the README to better fit your project's specifics or your style. Let me know if you need any more tweaks or additional information! 😄
