@@ -4,8 +4,16 @@ from telegram import Update, ParseMode
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 
 # Load config
-with open('config.json', 'r') as f:
-    config = json.load(f)
+def load_config():
+    with open('config.json', 'r') as f:
+        return json.load(f)
+
+# Save config
+def save_config(config):
+    with open('config.json', 'w') as f:
+        json.dump(config, f, indent=4)
+
+config = load_config()
 
 # Enable logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
@@ -24,9 +32,12 @@ def help_command(update: Update, context: CallbackContext) -> None:
         '/setwelcome <message> - Set welcome message\n'
         '/setgoodbye <message> - Set goodbye message\n'
         '/setschedule <message> - Set scheduled message\n'
-        '/setinterval <seconds> - Set schedule interval\n'
+        '/setinterval <minutes> - Set schedule interval\n'
         '/addbadword <word> - Add a bad word to the filter\n'
         '/removebadword <word> - Remove a bad word from the filter\n'
+        '/autoreplyon - Turn auto-reply on\n'
+        '/autoreplyoff - Turn auto-reply off\n'
+        '/setautoreply <trigger> <response> - Set auto-reply trigger and response\n'
     )
     update.message.reply_text(help_text)
 
@@ -54,31 +65,37 @@ def scheduled_message(context: CallbackContext) -> None:
 # Set welcome message
 def set_welcome(update: Update, context: CallbackContext) -> None:
     config['WELCOME_MESSAGE'] = ' '.join(context.args)
+    save_config(config)
     update.message.reply_text('Welcome message updated!')
 
 # Set goodbye message
 def set_goodbye(update: Update, context: CallbackContext) -> None:
     config['GOODBYE_MESSAGE'] = ' '.join(context.args)
+    save_config(config)
     update.message.reply_text('Goodbye message updated!')
 
 # Set scheduled message
 def set_schedule(update: Update, context: CallbackContext) -> None:
     config['SCHEDULED_MESSAGE'] = ' '.join(context.args)
+    save_config(config)
     update.message.reply_text('Scheduled message updated!')
 
-# Set schedule interval
+# Set schedule interval (in minutes)
 def set_interval(update: Update, context: CallbackContext) -> None:
     try:
-        config['SCHEDULE_INTERVAL'] = int(context.args[0])
+        minutes = int(context.args[0])
+        config['SCHEDULE_INTERVAL'] = minutes * 60  # Convert minutes to seconds
+        save_config(config)
         update.message.reply_text('Schedule interval updated!')
     except (IndexError, ValueError):
-        update.message.reply_text('Usage: /setinterval <seconds>')
+        update.message.reply_text('Usage: /setinterval <minutes>')
 
 # Add bad word
 def add_bad_word(update: Update, context: CallbackContext) -> None:
     word = ' '.join(context.args).lower()
     if word not in config['BAD_WORDS']:
         config['BAD_WORDS'].append(word)
+        save_config(config)
         update.message.reply_text(f'Added "{word}" to bad words list.')
     else:
         update.message.reply_text(f'"{word}" is already in the bad words list.')
@@ -88,9 +105,42 @@ def remove_bad_word(update: Update, context: CallbackContext) -> None:
     word = ' '.join(context.args).lower()
     if word in config['BAD_WORDS']:
         config['BAD_WORDS'].remove(word)
+        save_config(config)
         update.message.reply_text(f'Removed "{word}" from bad words list.')
     else:
         update.message.reply_text(f'"{word}" is not in the bad words list.')
+
+# Auto-reply on
+def auto_reply_on(update: Update, context: CallbackContext) -> None:
+    config['AUTO_REPLY_ENABLED'] = True
+    save_config(config)
+    update.message.reply_text('Auto-reply is now enabled.')
+
+# Auto-reply off
+def auto_reply_off(update: Update, context: CallbackContext) -> None:
+    config['AUTO_REPLY_ENABLED'] = False
+    save_config(config)
+    update.message.reply_text('Auto-reply is now disabled.')
+
+# Set auto-reply trigger and response
+def set_auto_reply(update: Update, context: CallbackContext) -> None:
+    if len(context.args) < 2:
+        update.message.reply_text('Usage: /setautoreply <trigger> <response>')
+        return
+    trigger = context.args[0].lower()
+    response = ' '.join(context.args[1:])
+    config['AUTO_REPLY_TRIGGER'] = trigger
+    config['AUTO_REPLY_RESPONSE'] = response
+    save_config(config)
+    update.message.reply_text(f'Auto-reply set for trigger "{trigger}".')
+
+# Auto-reply handler
+def auto_reply(update: Update, context: CallbackContext) -> None:
+    if not config['AUTO_REPLY_ENABLED']:
+        return
+    message_text = update.message.text.lower()
+    if config['AUTO_REPLY_TRIGGER'] in message_text:
+        update.message.reply_text(config['AUTO_REPLY_RESPONSE'])
 
 def main() -> None:
     # Create the Updater and pass it your bot's token
@@ -108,9 +158,13 @@ def main() -> None:
     dispatcher.add_handler(CommandHandler("setinterval", set_interval))
     dispatcher.add_handler(CommandHandler("addbadword", add_bad_word))
     dispatcher.add_handler(CommandHandler("removebadword", remove_bad_word))
+    dispatcher.add_handler(CommandHandler("autoreplyon", auto_reply_on))
+    dispatcher.add_handler(CommandHandler("autoreplyoff", auto_reply_off))
+    dispatcher.add_handler(CommandHandler("setautoreply", set_auto_reply))
     dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, delete_bad_words))
     dispatcher.add_handler(MessageHandler(Filters.status_update.new_chat_members, welcome))
     dispatcher.add_handler(MessageHandler(Filters.status_update.left_chat_member, goodbye))
+    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, auto_reply))
 
     # Set up job queue for scheduled messages
     job_queue = updater.job_queue
