@@ -5,5 +5,8 @@
     "WELCOME_MESSAGE": "🎉 Welcome aboard, {name}! We're thrilled to have you here. Feel free to introduce yourself and join the conversation! 😊",
     "GOODBYE_MESSAGE": "😢 Goodbye, {name}! We're sad to see you go. We hope to see you again soon. Take care! 👋",
     "SCHEDULED_MESSAGE": "🚨 Attention everyone! The guard bot is active and keeping an eye on the chat! Stay awesome! 💪",
-    "SCHEDULE_INTERVAL": 3600
+    "SCHEDULE_INTERVAL": 3600,
+    "AUTO_REPLY_ENABLED": false,
+    "AUTO_REPLY_TRIGGER": "trigger",
+    "AUTO_REPLY_RESPONSE": "This is an auto-reply."
 }
