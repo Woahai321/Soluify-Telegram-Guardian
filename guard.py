@@ -5,8 +5,23 @@ from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, Callb
 
 # Load config
 def load_config():
-    with open('config.json', 'r') as f:
-        return json.load(f)
+    try:
+        with open('config.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        logger.warning("Config file not found, loading defaults.")
+        return {
+            'TOKEN': '',
+            'CHAT_ID': '',
+            'WELCOME_MESSAGE': 'Welcome, {name}!',
+            'GOODBYE_MESSAGE': 'Goodbye, {name}!',
+            'SCHEDULED_MESSAGE': 'This is a scheduled message.',
+            'SCHEDULE_INTERVAL': 3600,  # Default to 1 hour
+            'BAD_WORDS': [],
+            'AUTO_REPLY_ENABLED': False,
+            'AUTO_REPLY_TRIGGER': '',
+            'AUTO_REPLY_RESPONSE': ''
+        }
 
 # Save config
 def save_config(config):
@@ -16,17 +31,27 @@ def save_config(config):
 config = load_config()
 
 # Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO,
+    handlers=[
+        logging.FileHandler("bot.log"),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Start command handler
 def start(update: Update, context: CallbackContext) -> None:
-    update.message.reply_text('Hi! I am your group guardian bot!')
+    update.message.reply_text(
+        'Hi! I am your group guardian bot! 🤖',
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 # Help command handler
 def help_command(update: Update, context: CallbackContext) -> None:
     help_text = (
-        'Commands:\n'
+        '📜 *Commands:*\n'
         '/start - Start the bot\n'
         '/help - Show this help message\n'
         '/setwelcome <message> - Set welcome message\n'
@@ -39,7 +64,7 @@ def help_command(update: Update, context: CallbackContext) -> None:
         '/autoreplyoff - Turn auto-reply off\n'
         '/setautoreply <trigger> <response> - Set auto-reply trigger and response\n'
     )
-    update.message.reply_text(help_text)
+    update.message.reply_text(help_text, parse_mode=ParseMode.MARKDOWN)
 
 # Delete messages with bad words
 def delete_bad_words(update: Update, context: CallbackContext) -> None:
@@ -66,19 +91,28 @@ def scheduled_message(context: CallbackContext) -> None:
 def set_welcome(update: Update, context: CallbackContext) -> None:
     config['WELCOME_MESSAGE'] = ' '.join(context.args)
     save_config(config)
-    update.message.reply_text('Welcome message updated!')
+    update.message.reply_text(
+        'Welcome message updated! 🎉',
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 # Set goodbye message
 def set_goodbye(update: Update, context: CallbackContext) -> None:
     config['GOODBYE_MESSAGE'] = ' '.join(context.args)
     save_config(config)
-    update.message.reply_text('Goodbye message updated!')
+    update.message.reply_text(
+        'Goodbye message updated! 👋',
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 # Set scheduled message
 def set_schedule(update: Update, context: CallbackContext) -> None:
     config['SCHEDULED_MESSAGE'] = ' '.join(context.args)
     save_config(config)
-    update.message.reply_text('Scheduled message updated!')
+    update.message.reply_text(
+        'Scheduled message updated! 🗓️',
+        parse_mode=ParseMode.MARKDOWN
+    )
 
 # Set schedule interval (in minutes)
 def set_interval(update: Update, context: CallbackContext) -> None:
@@ -96,9 +130,15 @@ def add_bad_word(update: Update, context: CallbackContext) -> None:
     if word not in config['BAD_WORDS']:
         config['BAD_WORDS'].append(word)
         save_config(config)
-        update.message.reply_text(f'Added "{word}" to bad words list.')
+        update.message.reply_text(
+            f'Added "{word}" to bad words list. 🛑',
+            parse_mode=ParseMode.MARKDOWN
+        )
     else:
-        update.message.reply_text(f'"{word}" is already in the bad words list.')
+        update.message.reply_text(
+            f'"{word}" is already in the bad words list. ⚠️',
+            parse_mode=ParseMode.MARKDOWN
+        )
 
 # Remove bad word
 def remove_bad_word(update: Update, context: CallbackContext) -> None:
@@ -106,9 +146,15 @@ def remove_bad_word(update: Update, context: CallbackContext) -> None:
     if word in config['BAD_WORDS']:
         config['BAD_WORDS'].remove(word)
         save_config(config)
-        update.message.reply_text(f'Removed "{word}" from bad words list.')
+        update.message.reply_text(
+            f'Removed "{word}" from bad words list. ✅',
+            parse_mode=ParseMode.MARKDOWN
+        )
     else:
-        update.message.reply_text(f'"{word}" is not in the bad words list.')
+        update.message.reply_text(
+            f'"{word}" is not in the bad words list. ❌',
+            parse_mode=ParseMode.MARKDOWN
+        )
 
 # Auto-reply on
 def auto_reply_on(update: Update, context: CallbackContext) -> None:
